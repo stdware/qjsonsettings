@@ -7,11 +7,15 @@ Qt QSettings in JSON format.
 Source code:
 
 ```cpp
+#include <QtCore/QCoreApplication>
+
 #include <qjsonsettings.h>
 
 static auto JSONFormat = QSettings::InvalidFormat;
 
 int main(int argc, char *argv[]) {
+    QCoreApplication a(argc, argv);
+
     // Register JSON format
     JSONFormat = QJsonSettings::registerFormat();
 

@@ -2,7 +2,6 @@
 
 #include <utility>
 #include <algorithm>
-#include <tuple>
 
 #include <QtCore/QIODevice>
 #include <QtCore/QByteArray>
@@ -11,6 +10,8 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QVariant>
 #include <QtCore/QRect>
+#include <QtCore/QPoint>
+#include <QtCore/QDateTime>
 #include <QtCore/QVarLengthArray>
 
 // Qt 6.8
@@ -182,11 +183,11 @@ namespace _QSettingsPrivate {
 // UTILS
 namespace {
 
-    static QString kKeyValue = QStringLiteral("$value");
+    static const QString kKeyValue = QStringLiteral("$value");
 
-    static QString kKeyValueType = QStringLiteral("$type");
+    static const QString kKeyValueType = QStringLiteral("$type");
 
-    static QString kKeyValueData = QStringLiteral("$data");
+    static const QString kKeyValueData = QStringLiteral("$data");
 
     // READ
     QVariant jsonValueToVariant(const QJsonValue &value) {

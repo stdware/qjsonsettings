@@ -1,6 +1,9 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRect>
 #include <QtCore/QFile>
+#include <QtCore/QSize>
+#include <QtCore/QVariant>
+#include <QtCore/QUuid>
 #include <QtTest/QtTest>
 
 #include <qjsonsettings.h>
@@ -22,30 +25,55 @@ static bool readJson(const QString &path, QJsonObject &out) {
     return true;
 }
 
+static QString randomSettingsFileName() {
+    QUuid uuid = QUuid::createUuid();
+    return "settings-" + uuid.toString(QUuid::WithoutBraces).replace("-", "_") + ".json";
+}
+
 class Test : public QObject {
     Q_OBJECT
 public:
-    Test(QObject *parent = nullptr) : QObject(parent) {
+    explicit Test(QObject *parent = nullptr) : QObject(parent) {
     }
 
 private:
     QString settingsPath;
 
-    void removeSettingsFile() {
+    // There is a cache inside QSettings. We need to make a copy of the written settings file.
+    void refreshSettingsFiles() {
+        if (settingsPath.isEmpty()) {
+            settingsPath = randomSettingsFileName();
+            return;
+        }
+
+        if (QFile::exists(settingsPath)) {
+            QString newSettingsPath = randomSettingsFileName();
+            QVERIFY(QFile::copy(settingsPath, newSettingsPath));
+            QVERIFY(QFile::remove(settingsPath));
+            settingsPath = newSettingsPath;
+        }
+    }
+
+    void removeSettingsFiles() {
+        if (settingsPath.isEmpty() || !QFile::exists(settingsPath)) {
+            return;
+        }
         std::ignore = QFile::remove(settingsPath);
+        settingsPath.clear();
     }
 
 private Q_SLOTS:
     void initTestCase() {
         format = QJsonSettings::registerFormat();
         QVERIFY(format != QSettings::InvalidFormat);
+    }
 
-        settingsPath =
-            QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("settings.json");
+    void init() {
+        refreshSettingsFiles();
     }
 
     void cleanup() {
-        removeSettingsFile();
+        removeSettingsFiles();
     }
 
     void testFormat() {
@@ -67,6 +95,8 @@ private Q_SLOTS:
 
             settings.sync();
         }
+
+        refreshSettingsFiles();
 
         // Read JSON
         {
@@ -107,8 +137,6 @@ private Q_SLOTS:
                 QVERIFY(value.isValid() && value.toInt() == i + 1);
             }
         }
-
-        removeSettingsFile();
     }
 
     void testVariants() {
@@ -142,6 +170,8 @@ private Q_SLOTS:
             settings.sync();
         }
 
+        refreshSettingsFiles();
+
         // Read settings
         {
             QSettings settings(settingsPath, format);
@@ -151,8 +181,6 @@ private Q_SLOTS:
                 QVERIFY(value == pair.second);
             }
         }
-
-        removeSettingsFile();
     }
 
     void testModify() {
@@ -178,6 +206,8 @@ private Q_SLOTS:
             settings.sync();
         }
 
+        refreshSettingsFiles();
+
         // Write settings again
         {
             QSettings settings(settingsPath, format);
@@ -188,6 +218,8 @@ private Q_SLOTS:
 
             settings.sync();
         }
+
+        refreshSettingsFiles();
 
         // Read settings
         {

@@ -189,6 +189,8 @@ namespace {
 
     static const QString kKeyValueData = QStringLiteral("$data");
 
+    static const QLatin1Char kSeparator = QLatin1Char('/');
+
     // READ
     QVariant jsonValueToVariant(const QJsonValue &value) {
         switch (value.type()) {
@@ -312,16 +314,16 @@ namespace {
 
     void splitSettingsKeys(SettingsKeys &result, const QStringView &s) {
         qsizetype start = 0;
-        qsizetype end = s.indexOf(QLatin1Char('/'));
+        qsizetype end = s.indexOf(kSeparator);
         while (end >= 0) {
             result.append(s.mid(start, end - start));
             start = end + 1;
-            end = s.indexOf(QLatin1Char('/'), start);
+            end = s.indexOf(kSeparator, start);
         }
         result.append(s.mid(start));
     }
 
-    class IntermediateTree {
+    class Writer {
     private:
         struct NodeRef {
             int index;
@@ -368,16 +370,17 @@ namespace {
             return index;
         }
 
+        // NOT USED
         void construct(const QJsonObject &input, int branchIndex) {
             for (auto it = input.begin(); it != input.end(); ++it) {
-                const auto &actualKey = it.key();
+                const auto &key = it.key();
                 const auto &value = it.value();
                 if (value.isObject() && value[kKeyValueType] == QJsonValue::Undefined) {
-                    construct(value.toObject(), findOrCreateBranch(actualKey, branchIndex));
+                    construct(value.toObject(), findOrCreateBranch(key, branchIndex));
                     continue;
                 }
 
-                insert(branchIndex, actualKey, jsonValueToVariant(it.value()));
+                insert(branchIndex, key, jsonValueToVariant(it.value()));
             }
         }
 
@@ -490,13 +493,13 @@ namespace {
                               QStringList &keys) const {
             for (const auto &ref : branch) {
                 if (ref.isLeaf) {
-                    auto mergedKeys = keys.join(QLatin1Char('/'));
+                    auto mergedKeys = keys.join(kSeparator);
                     const auto &leaf = leafs[ref.index];
                     if (leaf.key == kKeyValue) {
                         result[mergedKeys] = leaf.value;
                     } else {
                         if (!mergedKeys.isEmpty()) {
-                            mergedKeys.append(QLatin1Char('/'));
+                            mergedKeys.append(kSeparator);
                         }
                         result[mergedKeys + leaf.key] = leaf.value;
                     }
@@ -510,12 +513,12 @@ namespace {
         }
 
     public:
-        explicit IntermediateTree(const QJsonObject &input) {
+        explicit Writer(const QJsonObject &input) {
             rootIndex = allocBranch({});
             construct(input, rootIndex);
         }
 
-        explicit IntermediateTree(const QVariantMap &input) {
+        explicit Writer(const QVariantMap &input) {
             rootIndex = allocBranch({});
             construct(input, rootIndex);
         }
@@ -531,6 +534,46 @@ namespace {
             return toJsonObjectImpl(branches[rootIndex].refs);
         }
     };
+
+    class Reader {
+    private:
+        void toVariantMapImpl(const QJsonObject &input, QStringList &names,
+                              QVariantMap &result) const {
+            for (auto it = input.begin(); it != input.end(); ++it) {
+                const auto &key = it.key();
+                const auto &value = it.value();
+                if (key == kKeyValue) {
+                    result.insert(names.join(kSeparator), jsonValueToVariant(value));
+                    continue;
+                }
+
+                if (value.isObject() && value[kKeyValueType] == QJsonValue::Undefined) {
+                    names.append(key);
+                    toVariantMapImpl(value.toObject(), names, result);
+                    names.removeLast();
+                    continue;
+                }
+
+                names.append(key);
+                result.insert(names.join(kSeparator), jsonValueToVariant(it.value()));
+                names.removeLast();
+            }
+        }
+
+    public:
+        explicit Reader(const QJsonObject &input) : input(input) {
+        }
+
+        QVariantMap toVariantMap() const {
+            QVariantMap result;
+            QStringList names;
+            toVariantMapImpl(input, names, result);
+            return result;
+        }
+
+        const QJsonObject &input;
+    };
+
 }
 
 // INTERFACES
@@ -553,13 +596,13 @@ bool QJsonSettings::read(QIODevice &dev, QSettings::SettingsMap &settings) {
     if (error.error != QJsonParseError::NoError || !doc.isObject()) {
         return false;
     }
-    settings = IntermediateTree(doc.object()).toVariantMap();
+    settings = Reader(doc.object()).toVariantMap();
     return true;
 }
 
 bool QJsonSettings::write(QIODevice &dev, const QSettings::SettingsMap &settings) {
     QJsonDocument doc;
-    doc.setObject(IntermediateTree(settings).toJsonObject());
+    doc.setObject(Writer(settings).toJsonObject());
     dev.write(doc.toJson());
     return true;
 }

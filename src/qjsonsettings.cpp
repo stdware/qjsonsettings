@@ -412,6 +412,11 @@ namespace {
                         }
                         return doc;
                     }
+
+                    // Unknown type
+                    case QMetaType::UnknownType: {
+                        return QVariant();
+                    }
                     default:
                         break;
                 }
@@ -426,11 +431,16 @@ namespace {
     QJsonValue variantToJsonValue(const QVariant &value) {
         switch (value.metaType().id()) {
             // Primitive types
-            case QMetaType::LongLong:
-            case QMetaType::ULongLong:
+            case QMetaType::Bool:
             case QMetaType::Int:
             case QMetaType::UInt:
-            case QMetaType::Bool:
+            case QMetaType::LongLong:
+            case QMetaType::ULongLong:
+            case QMetaType::Double:
+            case QMetaType::Long:
+            case QMetaType::Short:
+            case QMetaType::ULong:
+            case QMetaType::UShort:
             case QMetaType::Float: {
                 return QJsonValue::fromVariant(value);
             }
@@ -620,6 +630,14 @@ namespace {
                 } else {
                     obj.insert(kKeyValueData, QJsonValue::Null);
                 }
+                return obj;
+            }
+
+            // Unknown type
+            case QMetaType::UnknownType: {
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::UnknownType);
+                obj.insert(kKeyValueData, QJsonValue::Null);
                 return obj;
             }
             default:

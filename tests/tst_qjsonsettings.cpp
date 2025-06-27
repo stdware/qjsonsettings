@@ -144,6 +144,7 @@ private Q_SLOTS:
             {"longlong", qlonglong(19)},
             {"ulonglong", qulonglong(114514)},
             {"double", 3.14},
+            {"float", 3.14f},
             {"string", "Hello, world!"},
             {"jsonArray", QJsonArray({"foo", "bar", 123})},
             {"stringList", QStringList({"foo", "bar", "baz"})},

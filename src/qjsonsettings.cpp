@@ -11,6 +11,7 @@
 #include <QtCore/QVariant>
 #include <QtCore/QRect>
 #include <QtCore/QPoint>
+#include <QtCore/QLine>
 #include <QtCore/QDateTime>
 #include <QtCore/QVarLengthArray>
 
@@ -217,12 +218,191 @@ namespace {
                 const auto &value = it.value();
 
                 switch (type) {
-                    case QMetaType::QJsonValue:
+                    // String list
+                    case QMetaType::QStringList: {
+                        QStringList result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            result.reserve(arr.size());
+                            for (const auto &v : arr) {
+                                result.append(v.toString());
+                            }
+                        }
+                        return result;
+                    }
+
+                    // Byte array
+                    case QMetaType::QByteArray: {
+                        QByteArray result;
+                        if (value.isString()) {
+                            result = value.toString().toLatin1();
+                        }
+                        return result;
+                    }
+
+                    // Simple structure types
+                    case QMetaType::QRect: {
+                        QRect result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 4) {
+                                result = {
+                                    arr[0].toInt(),
+                                    arr[1].toInt(),
+                                    arr[2].toInt(),
+                                    arr[3].toInt(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QRectF: {
+                        QRectF result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 4) {
+                                result = {
+                                    arr[0].toDouble(),
+                                    arr[1].toDouble(),
+                                    arr[2].toDouble(),
+                                    arr[3].toDouble(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QSize: {
+                        QSize result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 2) {
+                                result = {
+                                    arr[0].toInt(),
+                                    arr[1].toInt(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QSizeF: {
+                        QSizeF result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 2) {
+                                result = {
+                                    arr[0].toDouble(),
+                                    arr[1].toDouble(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QPoint: {
+                        QPoint result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 2) {
+                                result = {
+                                    arr[0].toInt(),
+                                    arr[1].toInt(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QPointF: {
+                        QPointF result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 2) {
+                                result = {
+                                    arr[0].toDouble(),
+                                    arr[1].toDouble(),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QLine: {
+                        QLine result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 4) {
+                                result = {
+                                    QPoint(arr[0].toInt(), arr[1].toInt()),
+                                    QPoint(arr[2].toInt(), arr[3].toInt()),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QLineF: {
+                        QLineF result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 4) {
+                                result = {
+                                    QPointF(arr[0].toDouble(), arr[1].toDouble()),
+                                    QPointF(arr[2].toDouble(), arr[3].toDouble()),
+                                };
+                            }
+                        }
+                        return result;
+                    }
+
+                    // Variant container types
+                    case QMetaType::QVariantPair: {
+                        QVariantPair result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            if (arr.size() == 2) {
+                                result = {
+                                    jsonValueToVariant(arr[0]),
+                                    jsonValueToVariant(arr[1]),
+                                };
+                            }
+                        }
+                        return QVariant::fromValue(result);
+                    }
+                    case QMetaType::QVariantList: {
+                        QVariantList result;
+                        if (value.isArray()) {
+                            const auto &arr = value.toArray();
+                            result.reserve(arr.size());
+                            for (const auto &v : arr) {
+                                result.append(jsonValueToVariant(v));
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QVariantMap: {
+                        QVariantMap result;
+                        if (value.isObject()) {
+                            const auto &obj = value.toObject();
+                            for (auto it = obj.begin(); it != obj.end(); ++it) {
+                                result.insert(it.key(), jsonValueToVariant(it.value()));
+                            }
+                        }
+                        return result;
+                    }
+                    case QMetaType::QVariantHash: {
+                        QVariantHash result;
+                        if (value.isObject()) {
+                            const auto &obj = value.toObject();
+                            for (auto it = obj.begin(); it != obj.end(); ++it) {
+                                result.insert(it.key(), jsonValueToVariant(it.value()));
+                            }
+                        }
+                        return result;
+                    }
+
+                    // Complex json types
+                    case QMetaType::QJsonValue: {
                         return (QJsonValue) value;
-
-                    case QMetaType::QJsonObject:
+                    }
+                    case QMetaType::QJsonObject: {
                         return value.toObject();
-
+                    }
                     case QMetaType::QJsonDocument: {
                         QJsonDocument doc;
                         if (value.isObject()) {
@@ -232,17 +412,6 @@ namespace {
                         }
                         return doc;
                     }
-
-                    case QMetaType::QStringList: {
-                        const auto &arr = value.toArray();
-                        QStringList result;
-                        result.reserve(arr.size());
-                        for (const auto &v : arr) {
-                            result.append(v.toString());
-                        }
-                        return result;
-                    }
-
                     default:
                         break;
                 }
@@ -256,29 +425,188 @@ namespace {
 
     QJsonValue variantToJsonValue(const QVariant &value) {
         switch (value.metaType().id()) {
+            // Primitive types
             case QMetaType::LongLong:
             case QMetaType::ULongLong:
             case QMetaType::Int:
             case QMetaType::UInt:
             case QMetaType::Bool:
-            case QMetaType::Float:
+            case QMetaType::Float: {
                 return QJsonValue::fromVariant(value);
+            }
 
-            case QMetaType::QString:
+            // Simple json types
+            case QMetaType::QString: {
                 return value.toString();
-            case QMetaType::QJsonArray:
+            }
+            case QMetaType::QJsonArray: {
                 return value.toJsonArray();
+            }
 
-            case QMetaType::QJsonObject: {
+            // String list
+            case QMetaType::QStringList: {
                 QJsonObject obj;
-                obj.insert(kKeyValueType, QMetaType::QJsonObject);
-                obj.insert(kKeyValueData, value.toJsonObject());
+                obj.insert(kKeyValueType, QMetaType::QStringList);
+                obj.insert(kKeyValueData, QJsonArray::fromStringList(value.toStringList()));
                 return obj;
             }
+
+            // ByteArray
+            case QMetaType::QByteArray: {
+                const auto &a = value.toByteArray();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QByteArray);
+                obj.insert(kKeyValueData, QLatin1StringView(a.constData(), a.size()));
+                return obj;
+            }
+
+            // Simple structure types
+            case QMetaType::QRect: {
+                const auto &r = value.toRect();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QRect);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              r.x(),
+                                              r.y(),
+                                              r.width(),
+                                              r.height(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QRectF: {
+                const auto &r = value.toRectF();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QRectF);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              r.x(),
+                                              r.y(),
+                                              r.width(),
+                                              r.height(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QSize: {
+                const auto &s = value.toSize();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QSize);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              s.width(),
+                                              s.height(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QSizeF: {
+                const auto &s = value.toSizeF();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QSizeF);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              s.width(),
+                                              s.height(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QPoint: {
+                const auto &p = value.toPoint();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QPoint);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              p.x(),
+                                              p.y(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QPointF: {
+                const auto &p = value.toPointF();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QPointF);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              p.x(),
+                                              p.y(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QLine: {
+                const auto &l = value.toLine();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QLine);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              l.x1(),
+                                              l.y1(),
+                                              l.x2(),
+                                              l.y2(),
+                                          });
+                return obj;
+            }
+            case QMetaType::QLineF: {
+                const auto &l = value.toLineF();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QLineF);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              l.x1(),
+                                              l.y1(),
+                                              l.x2(),
+                                              l.y2(),
+                                          });
+                return obj;
+            }
+
+            // Variant container types
+            case QMetaType::QVariantPair: {
+                const auto &pair = value.value<QVariantPair>();
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QVariantPair);
+                obj.insert(kKeyValueData, QJsonArray{
+                                              variantToJsonValue(pair.first),
+                                              variantToJsonValue(pair.second),
+                                          });
+                return obj;
+            }
+            case QMetaType::QVariantList: {
+                const auto &list = value.toList();
+                QJsonArray containerArr;
+                for (const auto &v : list) {
+                    containerArr.append(variantToJsonValue(v));
+                }
+
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QVariantList);
+                obj.insert(kKeyValueData, containerArr);
+                return obj;
+            }
+            case QMetaType::QVariantMap: {
+                const auto &map = value.toMap();
+                QJsonObject containerObj;
+                for (auto it = map.begin(); it != map.end(); ++it) {
+                    containerObj.insert(it.key(), variantToJsonValue(it.value()));
+                }
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QVariantMap);
+                obj.insert(kKeyValueData, containerObj);
+                return obj;
+            }
+            case QMetaType::QVariantHash: {
+                const auto &hash = value.toHash();
+                QJsonObject containerObj;
+                for (auto it = hash.begin(); it != hash.end(); ++it) {
+                    containerObj.insert(it.key(), variantToJsonValue(it.value()));
+                }
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QVariantHash);
+                obj.insert(kKeyValueData, containerObj);
+                return obj;
+            }
+
+            // Complex json types
             case QMetaType::QJsonValue: {
                 QJsonObject obj;
                 obj.insert(kKeyValueType, QMetaType::QJsonValue);
                 obj.insert(kKeyValueData, value.toJsonValue());
+                return obj;
+            }
+            case QMetaType::QJsonObject: {
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::QJsonObject);
+                obj.insert(kKeyValueData, value.toJsonObject());
                 return obj;
             }
             case QMetaType::QJsonDocument: {
@@ -292,12 +620,6 @@ namespace {
                 } else {
                     obj.insert(kKeyValueData, QJsonValue::Null);
                 }
-                return obj;
-            }
-            case QMetaType::QStringList: {
-                QJsonObject obj;
-                obj.insert(kKeyValueType, QMetaType::QStringList);
-                obj.insert(kKeyValueData, QJsonArray::fromStringList(value.toStringList()));
                 return obj;
             }
             default:

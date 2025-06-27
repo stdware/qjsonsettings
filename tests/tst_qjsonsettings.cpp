@@ -1,9 +1,12 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRect>
-#include <QtCore/QFile>
+#include <QtCore/QLine>
+#include <QtCore/QPoint>
 #include <QtCore/QSize>
+#include <QtCore/QFile>
 #include <QtCore/QVariant>
 #include <QtCore/QUuid>
+#include <QtGui/QColor>
 #include <QtTest/QtTest>
 
 #include <qjsonsettings.h>
@@ -87,12 +90,10 @@ private Q_SLOTS:
         // Write settings
         {
             QSettings settings(settingsPath, format);
-
             for (qsizetype i = 0; i < testKeysList.size(); ++i) {
                 QString mergedKeys = testKeysList[i].join(QLatin1Char('/'));
                 settings.setValue(mergedKeys, int(i + 1));
             }
-
             settings.sync();
         }
 
@@ -114,13 +115,10 @@ private Q_SLOTS:
                     QVERIFY(it != obj.end());
                     value = it.value();
                 }
-
                 if (value.isObject()) {
                     auto obj = value.toObject();
-
                     auto it = obj.find(QJsonSettings::reservedKey(QJsonSettings::Value));
                     QVERIFY(it != obj.end());
-
                     value = it.value();
                 }
                 QVERIFY(value.isDouble() && value.toInt() == i + 1);
@@ -130,7 +128,6 @@ private Q_SLOTS:
         // Read settings
         {
             QSettings settings(settingsPath, format);
-
             for (qsizetype i = 0; i < testKeysList.size(); ++i) {
                 QString mergedKeys = testKeysList[i].join(QLatin1Char('/'));
                 auto value = settings.value(mergedKeys);
@@ -141,32 +138,42 @@ private Q_SLOTS:
 
     void testVariants() {
         const QList<QPair<QString, QVariant>> testPairs = {
-            {"int", 123},
+            {"bool", true},
+            {"int", 810},
+            {"uint", quint32(19)},
+            {"longlong", qlonglong(19)},
+            {"ulonglong", qulonglong(114514)},
             {"double", 3.14},
             {"string", "Hello, world!"},
-            {"bool", true},
-            {"point", QPoint(10, 20)},
-            {"rect", QRect(10, 20, 30, 40)},
-            {"size", QSize(50, 60)},
-            {"dateTime", QDateTime::currentDateTime()},
+            {"jsonArray", QJsonArray({"foo", "bar", 123})},
             {"stringList", QStringList({"foo", "bar", "baz"})},
             {"byteArray", QByteArray("Hello, world!")},
-            {"jsonValue", QJsonValue(123)},
-            {"jsonObject", QJsonObject({{"foo", "bar"}, {"baz", 123}})},
-            {"jsonArray", QJsonArray({"foo", "bar", 123})},
+            {"rect", QRect(10, 20, 30, 40)},
+            {"rectF", QRectF(10.5, 20.5, 30.5, 40.5)},
+            {"size", QSize(50, 60)},
+            {"sizeF", QSizeF(50.5, 60.5)},
+            {"point", QPoint(10, 20)},
+            {"pointF", QPointF(10.5, 20.5)},
+            {"line", QLine(QPoint(10, 20), QPoint(30, 40))},
+            {"lineF", QLineF(QPointF(10.5, 20.5), QPointF(30.5, 40.5))},
+            {"variantPair", QVariant::fromValue(QVariantPair(123, "Hello, world!"))},
             {"variantList", QVariantList({"foo", 123, true})},
             {"variantMap", QVariantMap({{"foo", "bar"}, {"baz", 123}})},
+            {"variantHash", QVariantHash({{"foo", "bar"}, {"baz", 123}})},
+            {"jsonValue", QJsonValue(123)},
+            {"jsonObject", QJsonObject({{"foo", "bar"}, {"baz", 123}})},
+            {"jsonDocument", QJsonDocument(QJsonObject({{"foo", "bar"}, {"baz", 123}}))},
+            {"dateTime", QDateTime::currentDateTime()},
+            {"color", QColor(255, 255, 255)},
             {"invalid", QVariant()},
         };
 
         // Write settings
         {
             QSettings settings(settingsPath, format);
-
             for (const auto &pair : testPairs) {
                 settings.setValue(pair.first, pair.second);
             }
-
             settings.sync();
         }
 
@@ -175,7 +182,6 @@ private Q_SLOTS:
         // Read settings
         {
             QSettings settings(settingsPath, format);
-
             for (const auto &pair : testPairs) {
                 auto value = settings.value(pair.first);
                 QVERIFY(value == pair.second);
@@ -198,11 +204,9 @@ private Q_SLOTS:
         // Write settings
         {
             QSettings settings(settingsPath, format);
-
             for (const auto &pair : testPairs1) {
                 settings.setValue(pair.first, pair.second);
             }
-
             settings.sync();
         }
 
@@ -211,11 +215,9 @@ private Q_SLOTS:
         // Write settings again
         {
             QSettings settings(settingsPath, format);
-
             for (const auto &pair : testPairs2) {
                 settings.setValue(pair.first, pair.second);
             }
-
             settings.sync();
         }
 
@@ -224,7 +226,6 @@ private Q_SLOTS:
         // Read settings
         {
             QSettings settings(settingsPath, format);
-
             for (const auto &pair : testPairs2) {
                 auto value = settings.value(pair.first);
                 QVERIFY(value == pair.second);

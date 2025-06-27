@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Stdware Collections (https://www.github.com/stdware)
+// SPDX-License-Identifier: MIT
+
 #ifndef QJSONSETTINGS_H
 #define QJSONSETTINGS_H
 

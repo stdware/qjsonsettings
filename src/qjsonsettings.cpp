@@ -218,6 +218,14 @@ namespace {
                 const auto &value = it.value();
 
                 switch (type) {
+                    // Large integer types
+                    case QMetaType::LongLong: {
+                        return value.toString().toLongLong();
+                    }
+                    case QMetaType::ULongLong: {
+                        return value.toString().toULongLong();
+                    }
+
                     // String list
                     case QMetaType::QStringList: {
                         QStringList result;
@@ -431,18 +439,39 @@ namespace {
     QJsonValue variantToJsonValue(const QVariant &value) {
         switch (value.metaType().id()) {
             // Primitive types
-            case QMetaType::Bool:
+            case QMetaType::Bool: {
+            }
             case QMetaType::Int:
             case QMetaType::UInt:
-            case QMetaType::LongLong:
-            case QMetaType::ULongLong:
             case QMetaType::Double:
-            case QMetaType::Long:
             case QMetaType::Short:
-            case QMetaType::ULong:
             case QMetaType::UShort:
             case QMetaType::Float: {
                 return QJsonValue::fromVariant(value);
+            }
+
+            case QMetaType::LongLong:
+            case QMetaType::Long: {
+                qlonglong num = value.toLongLong();
+                if (num <= (2LL << 50) && num >= -(2LL << 50)) {
+                    return QJsonValue(double(num));
+                }
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::LongLong);
+                obj.insert(kKeyValueData, value.toString());
+                return obj;
+            }
+
+            case QMetaType::ULongLong:
+            case QMetaType::ULong: {
+                qulonglong num = value.toULongLong();
+                if (num <= (2ULL << 50)) {
+                    return QJsonValue(double(num));
+                }
+                QJsonObject obj;
+                obj.insert(kKeyValueType, QMetaType::ULongLong);
+                obj.insert(kKeyValueData, value.toString());
+                return obj;
             }
 
             // Simple json types
@@ -925,7 +954,6 @@ QString QJsonSettings::reservedKey(ReservedKey key) {
             return kKeyValueType;
         case ValueData:
             return kKeyValueData;
-            break;
     };
     return {};
 }

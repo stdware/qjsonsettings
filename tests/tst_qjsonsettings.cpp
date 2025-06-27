@@ -1,3 +1,6 @@
+#include <utility>
+#include <limits>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRect>
 #include <QtCore/QLine>
@@ -141,14 +144,14 @@ private Q_SLOTS:
             {"bool", true},
             {"int", 810},
             {"uint", quint32(19)},
-            {"longlong", qlonglong(19)},
-            {"ulonglong", qulonglong(114514)},
+            {"longlong", std::numeric_limits<qlonglong>::lowest() + 1},
+            {"ulonglong", std::numeric_limits<qulonglong>::max() - 1},
             {"double", 3.14},
             {"float", 3.14f},
             {"string", "Hello, world!"},
             {"jsonArray", QJsonArray({"foo", "bar", 123})},
             {"stringList", QStringList({"foo", "bar", "baz"})},
-            {"byteArray", QByteArray("Hello, world!")},
+            {"byteArray", QByteArray("\x01\x02\x03\x04")},
             {"rect", QRect(10, 20, 30, 40)},
             {"rectF", QRectF(10.5, 20.5, 30.5, 40.5)},
             {"size", QSize(50, 60)},

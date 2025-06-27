@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(qjsonsettings VERSION 0.0.1.2 LANGUAGES CXX)
 
 option(QJSONSETTINGS_BUILD_TESTS "Build tests" OFF)
+option(QJSONSETTINGS_BUILD_EXAMPLES "Build examples" OFF)
 
 if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
@@ -20,4 +21,8 @@ add_subdirectory(src)
 
 if(QJSONSETTINGS_BUILD_TESTS)
     add_subdirectory(tests)
+endif()
+
+if(QJSONSETTINGS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
